@@ -238,12 +238,14 @@ if (!counselor.value) {
       </section>
     </div>
 
-    <transition name="slide-fade">
-      <section v-if="showForm && selectedSlot && selectedDate" class="form-panel card">
-      <h3 class="form-title">
-        <el-icon color="#ff6b9d"><EditPen /></el-icon>
-        填写预约信息
-      </h3>
+    <el-dialog
+      v-model="showForm"
+      title="填写预约信息"
+      width="640px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      class="appointment-dialog"
+    >
       <div class="summary">
         <div class="summary-row">
           <span class="label">咨询师：</span>
@@ -251,7 +253,7 @@ if (!counselor.value) {
         </div>
         <div class="summary-row">
           <span class="label">时间：</span>
-          <span class="value">{{ selectedDate.format('YYYY年MM月DD日') }} {{ selectedSlot.startTime }}-{{ selectedSlot.endTime }}</span>
+          <span class="value" v-if="selectedDate && selectedSlot">{{ selectedDate.format('YYYY年MM月DD日') }} {{ selectedSlot.startTime }}-{{ selectedSlot.endTime }}</span>
         </div>
       </div>
 
@@ -291,16 +293,16 @@ if (!counselor.value) {
             </div>
           </div>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" class="submit-btn" @click="submitAppointment">
-            <el-icon><Check /></el-icon>
-            确认预约
-          </el-button>
-          <el-button @click="showForm = false">取消</el-button>
-        </el-form-item>
       </el-form>
-    </section>
-    </transition>
+
+      <template #footer>
+        <el-button @click="showForm = false">取消</el-button>
+        <el-button type="primary" class="submit-btn" @click="submitAppointment">
+          <el-icon><Check /></el-icon>
+          确认预约
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -632,27 +634,11 @@ if (!counselor.value) {
   margin-top: 16px;
 }
 
-.form-panel {
-  padding: 28px;
-  max-width: 720px;
-}
-
-.form-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 17px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
 .summary {
   background: #fafbff;
   border-radius: 10px;
   padding: 14px 20px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   border-left: 4px solid #ff6b9d;
 }
 
@@ -679,7 +665,7 @@ if (!counselor.value) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px 0;
+  margin-top: 8px;
 }
 
 .tip-text {
@@ -691,21 +677,6 @@ if (!counselor.value) {
   background: linear-gradient(135deg, #ff6b9d 0%, #c471f5 100%);
   border: none;
   padding: 10px 32px;
-}
-
-.slide-fade-enter-active {
-  transform: translateY(10px);
-  opacity: 0;
-}
-
-.slide-fade-leave-active {
-  transform: translateY(-10px);
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.slide-fade-enter-active {
-  transition: all 0.3s ease;
 }
 
 @media (max-width: 960px) {

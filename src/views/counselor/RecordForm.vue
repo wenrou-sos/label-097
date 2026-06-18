@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppointmentStore } from '@/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { ConsultationRecord } from '@/types'
+import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,24 @@ const formData = ref({
 })
 
 const isEdit = computed(() => !!existingRecord.value)
+
+const canSubmit = computed(() => {
+  if (!appointment.value) return false
+  if (isEdit.value) return true
+  const aptTime = dayjs(`${appointment.value.date} ${appointment.value.startTime}`)
+  return dayjs().isAfter(aptTime)
+})
+
+const timeUntilStart = computed(() => {
+  if (!appointment.value || isEdit.value) return null
+  const aptTime = dayjs(`${appointment.value.date} ${appointment.value.startTime}`)
+  const diff = aptTime.diff(dayjs(), 'minute')
+  if (diff <= 0) return null
+  const hours = Math.floor(diff / 60)
+  const mins = diff % 60
+  if (hours > 0) return `${hours}小时${mins}分钟`
+  return `${mins}分钟`
+})
 
 onMounted(() => {
   if (!appointment.value) {
@@ -54,6 +73,11 @@ const handleSubmit = async () => {
     return
   }
   if (!appointment.value) return
+
+  if (!canSubmit.value) {
+    ElMessage.warning('咨询尚未开始，请在咨询开始后再提交记录')
+    return
+  }
 
   await ElMessageBox.confirm(
     `确认${isEdit.value ? '更新' : '提交'}咨询记录？提交后可再次编辑。`,
@@ -145,6 +169,16 @@ const back = () => router.back()
         </h2>
         <p class="form-tip">请在咨询结束后及时填写以下内容，以便为访客提供持续、高质量的咨询服务</p>
 
+        <el-alert
+          v-if="!canSubmit && !isEdit"
+          :title="'咨询尚未开始，距开始还有 ' + timeUntilStart"
+          description="咨询记录只能在咨询开始后填写和提交，请耐心等待。"
+          type="warning"
+          show-icon
+          :closable="false"
+          class="time-alert"
+        />
+
         <el-form
           ref="formRef"
           :model="formData"
@@ -226,6 +260,7 @@ const back = () => router.back()
               size="large"
               type="primary"
               class="submit-btn"
+              :disabled="!canSubmit"
               @click="handleSubmit"
             >
               <el-icon><Check /></el-icon>
@@ -343,6 +378,10 @@ const back = () => router.back()
   color: #888;
   margin-bottom: 28px;
   padding-left: 30px;
+}
+
+.time-alert {
+  margin-bottom: 20px;
 }
 
 .form {

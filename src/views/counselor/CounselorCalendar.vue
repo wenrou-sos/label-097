@@ -56,9 +56,15 @@ const monthStats = computed(() => {
 })
 
 const todayAppointments = computed(() => {
-  const todayStr = dayjs().format('YYYY-MM-DD')
+  const now = dayjs()
+  const todayStr = now.format('YYYY-MM-DD')
   return appointmentStore.appointmentsForCounselor
-    .filter(a => a.date === todayStr && a.status === 'confirmed')
+    .filter(a => {
+      if (a.date !== todayStr || a.status !== 'confirmed') return false
+      const aptTime = dayjs(`${a.date} ${a.startTime}`)
+      const diffMinutes = aptTime.diff(now, 'minute')
+      return diffMinutes > 0 && diffMinutes <= 15
+    })
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
 })
 
@@ -86,6 +92,11 @@ const getStatusLabel = (status: string) => {
 
 const goRecordForm = (apt: Appointment) => {
   router.push(`/counselor/record/${apt.id}`)
+}
+
+const isStarted = (apt: Appointment) => {
+  const aptTime = dayjs(`${apt.date} ${apt.startTime}`)
+  return dayjs().isAfter(aptTime)
 }
 
 const handleReminder = (apt: Appointment) => {
@@ -127,9 +138,9 @@ const handleReminder = (apt: Appointment) => {
       <div class="today-header">
         <h3 class="today-title">
           <el-icon color="#ff6b9d"><Bell /></el-icon>
-          今日预约提醒
+          即将开始的咨询（15分钟内）
         </h3>
-        <el-tag type="danger" effect="light" size="small">咨询前15分钟自动弹窗</el-tag>
+        <el-tag type="danger" effect="light" size="small">咨询前15分钟自动弹窗提醒</el-tag>
       </div>
       <div class="today-list">
         <div
@@ -156,7 +167,7 @@ const handleReminder = (apt: Appointment) => {
             </div>
           </div>
           <el-button
-            v-if="apt.status === 'confirmed'"
+            v-if="apt.status === 'confirmed' && isStarted(apt)"
             type="primary"
             size="small"
             @click.stop="goRecordForm(apt)"
@@ -270,7 +281,7 @@ const handleReminder = (apt: Appointment) => {
                   查看详情
                 </el-button>
                 <el-button
-                  v-if="apt.status === 'confirmed'"
+                  v-if="apt.status === 'confirmed' && isStarted(apt)"
                   size="small"
                   type="primary"
                   @click="goRecordForm(apt)"

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import dayjs, { Dayjs } from 'dayjs'
 import { useRouter } from 'vue-router'
 import { useAppointmentStore } from '@/stores'
 import type { Appointment } from '@/types'
 import { ElMessageBox } from 'element-plus'
+import * as echarts from 'echarts'
 
 const router = useRouter()
 const appointmentStore = useAppointmentStore()
@@ -53,6 +54,150 @@ const monthStats = computed(() => {
     completed: monthApts.filter(a => a.status === 'completed').length,
     confirmed: monthApts.filter(a => a.status === 'confirmed').length
   }
+})
+
+const chartRef = ref<HTMLElement | null>(null)
+let chartInstance: echarts.ECharts | null = null
+
+const monthlyTrendData = computed(() => {
+  const start = currentMonth.value.startOf('month')
+  const end = currentMonth.value.endOf('month')
+  const dates: string[] = []
+  const confirmedData: number[] = []
+  const completedData: number[] = []
+  let cursor = start.clone()
+  while (cursor.isBefore(end) || cursor.isSame(end, 'day')) {
+    const dateStr = cursor.format('YYYY-MM-DD')
+    const dayApts = appointmentStore.appointmentsForCounselor.filter(a => a.date === dateStr)
+    dates.push(cursor.date() + '日')
+    confirmedData.push(dayApts.filter(a => a.status === 'confirmed' || a.status === 'completed').length)
+    completedData.push(dayApts.filter(a => a.status === 'completed').length)
+    cursor = cursor.add(1, 'day')
+  }
+  return { dates, confirmedData, completedData }
+})
+
+const initChart = () => {
+  if (!chartRef.value) return
+  chartInstance = echarts.init(chartRef.value)
+  updateChart()
+}
+
+const updateChart = () => {
+  if (!chartInstance) return
+  const { dates, confirmedData, completedData } = monthlyTrendData.value
+  const option: echarts.EChartsOption = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255,255,255,0.95)',
+      borderColor: '#f0f0f0',
+      borderWidth: 1,
+      textStyle: { color: '#333', fontSize: 12 },
+      axisPointer: { type: 'line', lineStyle: { color: '#c471f5', type: 'dashed' } }
+    },
+    legend: {
+      data: ['已确认预约', '已完成咨询'],
+      right: 20,
+      top: 10,
+      icon: 'roundRect',
+      itemWidth: 16,
+      itemHeight: 8,
+      textStyle: { color: '#666', fontSize: 12 }
+    },
+    grid: {
+      left: 40,
+      right: 30,
+      top: 50,
+      bottom: 30,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: dates,
+      axisLine: { lineStyle: { color: '#e8e8e8' } },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#999',
+        fontSize: 11,
+        interval: Math.floor(dates.length / 6)
+      }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#f5f5f5', type: 'dashed' } },
+      axisLabel: { color: '#999', fontSize: 11 }
+    },
+    series: [
+      {
+        name: '已确认预约',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 7,
+        showSymbol: false,
+        data: confirmedData,
+        lineStyle: { width: 2.5, color: '#7873f5' },
+        itemStyle: { color: '#7873f5', borderWidth: 2, borderColor: '#fff' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(120, 115, 245, 0.25)' },
+            { offset: 1, color: 'rgba(120, 115, 245, 0.02)' }
+          ])
+        },
+        emphasis: {
+          focus: 'series',
+          itemStyle: { borderWidth: 3 }
+        }
+      },
+      {
+        name: '已完成咨询',
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 7,
+        showSymbol: false,
+        data: completedData,
+        lineStyle: { width: 2.5, color: '#52c41a' },
+        itemStyle: { color: '#52c41a', borderWidth: 2, borderColor: '#fff' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(82, 196, 26, 0.25)' },
+            { offset: 1, color: 'rgba(82, 196, 26, 0.02)' }
+          ])
+        },
+        emphasis: {
+          focus: 'series',
+          itemStyle: { borderWidth: 3 }
+        }
+      }
+    ]
+  }
+  chartInstance.setOption(option, true)
+}
+
+const handleResize = () => {
+  chartInstance?.resize()
+}
+
+onMounted(() => {
+  nextTick(() => {
+    initChart()
+    window.addEventListener('resize', handleResize)
+  })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  chartInstance?.dispose()
+  chartInstance = null
+})
+
+watch(currentMonth, () => {
+  nextTick(() => updateChart())
 })
 
 const todayAppointments = computed(() => {
@@ -133,6 +278,19 @@ const handleReminder = (apt: Appointment) => {
         </div>
       </div>
     </div>
+
+    <section class="trend-card card">
+      <div class="trend-header">
+        <h3 class="trend-title">
+          <el-icon color="#6a11cb"><TrendCharts /></el-icon>
+          月度预约趋势
+        </h3>
+        <div class="trend-nav">
+          <span class="trend-month">{{ currentMonth.format('YYYY年MM月') }}</span>
+        </div>
+      </div>
+      <div ref="chartRef" class="chart-container"></div>
+    </section>
 
     <div class="today-card card" v-if="todayAppointments.length > 0">
       <div class="today-header">
@@ -318,6 +476,39 @@ const handleReminder = (apt: Appointment) => {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.trend-card {
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.trend-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.trend-month {
+  font-size: 13px;
+  color: #999;
+  padding: 4px 12px;
+  background: #f5f7fa;
+  border-radius: 12px;
+}
+
+.chart-container {
+  width: 100%;
+  height: 320px;
 }
 
 .stat-card {

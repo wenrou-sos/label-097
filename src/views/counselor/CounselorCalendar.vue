@@ -70,7 +70,7 @@ const monthlyTrendData = computed(() => {
     const dateStr = cursor.format('YYYY-MM-DD')
     const dayApts = appointmentStore.appointmentsForCounselor.filter(a => a.date === dateStr)
     dates.push(cursor.date() + '日')
-    confirmedData.push(dayApts.filter(a => a.status === 'confirmed' || a.status === 'completed').length)
+    confirmedData.push(dayApts.filter(a => a.status === 'confirmed').length)
     completedData.push(dayApts.filter(a => a.status === 'completed').length)
     cursor = cursor.add(1, 'day')
   }
@@ -135,19 +135,13 @@ const updateChart = () => {
       {
         name: '已确认预约',
         type: 'line',
-        smooth: true,
+        smooth: false,
         symbol: 'circle',
-        symbolSize: 7,
-        showSymbol: false,
+        symbolSize: 6,
+        showSymbol: true,
         data: confirmedData,
-        lineStyle: { width: 2.5, color: '#7873f5' },
+        lineStyle: { width: 2, color: '#7873f5' },
         itemStyle: { color: '#7873f5', borderWidth: 2, borderColor: '#fff' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(120, 115, 245, 0.25)' },
-            { offset: 1, color: 'rgba(120, 115, 245, 0.02)' }
-          ])
-        },
         emphasis: {
           focus: 'series',
           itemStyle: { borderWidth: 3 }
@@ -156,19 +150,13 @@ const updateChart = () => {
       {
         name: '已完成咨询',
         type: 'line',
-        smooth: true,
+        smooth: false,
         symbol: 'circle',
-        symbolSize: 7,
-        showSymbol: false,
+        symbolSize: 6,
+        showSymbol: true,
         data: completedData,
-        lineStyle: { width: 2.5, color: '#52c41a' },
+        lineStyle: { width: 2, color: '#52c41a' },
         itemStyle: { color: '#52c41a', borderWidth: 2, borderColor: '#fff' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(82, 196, 26, 0.25)' },
-            { offset: 1, color: 'rgba(82, 196, 26, 0.02)' }
-          ])
-        },
         emphasis: {
           focus: 'series',
           itemStyle: { borderWidth: 3 }

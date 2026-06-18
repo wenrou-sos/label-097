@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Counselor, TimeSlot, Appointment, ConsultationRecord, ExpertiseField } from '@/types'
+import type { Counselor, TimeSlot, Appointment, ConsultationRecord, ExpertiseField, VisitorProfile } from '@/types'
 import { mockCounselors, mockTimeSlots, mockAppointments, mockRecords } from '@/mock'
 import dayjs from 'dayjs'
 
@@ -147,6 +147,24 @@ export const useAppointmentStore = defineStore('appointment', {
           }
         }
       })
+    },
+    getVisitorProfileByPhone(phone: string): VisitorProfile | null {
+      const visitorApts = this.appointmentsForCounselor
+        .filter(a => a.clientPhone === phone)
+        .sort((a, b) => dayjs(`${a.date} ${a.startTime}`).valueOf() - dayjs(`${b.date} ${b.startTime}`).valueOf())
+      if (visitorApts.length === 0) return null
+      const visitorRecords = visitorApts
+        .map(a => this.getRecordByAppointmentId(a.id))
+        .filter((r): r is ConsultationRecord => !!r)
+      const firstApt = visitorApts[0]
+      return {
+        phone,
+        name: firstApt.clientName,
+        firstConsultTime: `${firstApt.date} ${firstApt.startTime}`,
+        totalConsultCount: visitorRecords.length,
+        appointments: visitorApts,
+        records: visitorRecords
+      }
     }
   }
 })

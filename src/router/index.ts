@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
         name: 'RecordForm',
         component: () => import('@/views/counselor/RecordForm.vue'),
         props: true
+      },
+      {
+        path: 'visitor/:phone',
+        name: 'VisitorProfile',
+        component: () => import('@/views/counselor/VisitorProfile.vue'),
+        props: true
       }
     ]
   }

@@ -81,7 +81,9 @@ const hasRecord = (aptId: string) => {
             </el-avatar>
             <div class="client-info">
               <div class="name">
-                {{ apt.clientName }}
+                <router-link :to="`/counselor/visitor/${apt.clientPhone}`" class="name-link">
+                  {{ apt.clientName }}
+                </router-link>
                 <el-tag size="small" type="info" effect="plain">{{ apt.clientPhone }}</el-tag>
               </div>
               <div class="time">
@@ -245,6 +247,17 @@ const hasRecord = (aptId: string) => {
   font-weight: 600;
   color: #1f1f1f;
   margin-bottom: 4px;
+}
+
+.name-link {
+  color: #2575fc;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.name-link:hover {
+  color: #6a11cb;
+  text-decoration: underline;
 }
 
 .client-info .time {

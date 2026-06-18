@@ -61,3 +61,12 @@ export interface Reminder {
   triggered: boolean
   triggerTime: string
 }
+
+export interface VisitorProfile {
+  phone: string
+  name: string
+  firstConsultTime: string
+  totalConsultCount: number
+  appointments: Appointment[]
+  records: ConsultationRecord[]
+}
